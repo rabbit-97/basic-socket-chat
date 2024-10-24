@@ -25,7 +25,7 @@ const messages = [];
 io.on("connection", (socket) => {
   console.log("사용자가 연결되었습니다", socket.id);
   const welcome = {
-    id: socket.id, // + 난수
+    id: `${socket.id}${Math.floor(Math.random() * 10000)}`,
     content: `새로운 유저 ${socket.id} 가 입장했습니다.`,
     timestamp: new Date(),
   };
@@ -35,7 +35,7 @@ io.on("connection", (socket) => {
   socket.on("SEND_MESSAGE", (msg) => {
     console.log(msg);
     const message = {
-      id: socket.id, // + 난수
+      id: `${socket.id}${Math.floor(Math.random() * 10000)}`,
       content: msg,
       timestamp: new Date(),
     };
