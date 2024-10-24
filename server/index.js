@@ -19,14 +19,29 @@ const io = new Server(httpServer, {
   },
 });
 
-// 채팅 기록 저장 배열
 const messages = [];
+
+const generateNickname = () => {
+  const adjectives = ["빠른", "느린", "행복한", "슬픈", "용감한"];
+  const animals = ["사자", "호랑이", "토끼", "거북이", "독수리"];
+  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const animal = animals[Math.floor(Math.random() * animals.length)];
+  return `${adjective} ${animal}`;
+};
 
 io.on("connection", (socket) => {
   console.log("사용자가 연결되었습니다", socket.id);
+
+  const uniqueId = `${socket.id}-${Math.floor(Math.random() * 10000)}`;
+  socket.uniqueId = uniqueId;
+
+  const nickname = generateNickname();
+  socket.nickname = nickname;
+
   const welcome = {
-    id: `${socket.id}${Math.floor(Math.random() * 10000)}`,
-    content: `새로운 유저 ${socket.id} 가 입장했습니다.`,
+    id: uniqueId,
+    sender: nickname,
+    content: `새로운 유저 ${nickname} 가 입장했습니다.`,
     timestamp: new Date(),
   };
 
@@ -35,7 +50,8 @@ io.on("connection", (socket) => {
   socket.on("SEND_MESSAGE", (msg) => {
     console.log(msg);
     const message = {
-      id: `${socket.id}${Math.floor(Math.random() * 10000)}`,
+      id: uniqueId,
+      sender: nickname,
       content: msg,
       timestamp: new Date(),
     };
@@ -50,7 +66,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// 채팅 기록 반환 api
 app.get("/messages", (req, res) => {
   res.json(messages);
 });
