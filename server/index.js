@@ -19,10 +19,8 @@ const io = new Server(httpServer, {
   },
 });
 
-// 숙제
-// 서버에 메세지 저장 - 어떻게 넣어야할까
-// GET /messages 경로로 채팅 기록 반환
-// 추가 기능 구현
+// 채팅 기록 저장 배열
+const messages = [];
 
 io.on("connection", (socket) => {
   console.log("사용자가 연결되었습니다", socket.id);
@@ -42,12 +40,19 @@ io.on("connection", (socket) => {
       timestamp: new Date(),
     };
 
+    messages.push(message);
+
     io.emit("SEND_MESSAGE", JSON.stringify(message));
   });
 
   socket.on("disconnect", () => {
     console.log("사용자가 연결을 끊었습니다");
   });
+});
+
+// 채팅 기록 반환 api
+app.get("/messages", (req, res) => {
+  res.json(messages);
 });
 
 app.use(express.static(path.join(path.resolve(), "public")));
