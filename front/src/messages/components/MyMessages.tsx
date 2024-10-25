@@ -42,8 +42,22 @@ export default function MyProfile() {
 
     const sendMessage = (message) => {
         if (socket) {
-            console.log('sending message');
-            socket.emit('SEND_MESSAGE', message);
+            socket.emit('SEND_MESSAGE', {
+                room: selectedChat.id,
+                message
+            });
+        }
+    }
+
+    const joinRoom = (room) => {
+        if (socket) {
+            socket.emit('JOIN_ROOM', room);
+        }
+    }
+
+    const leaveRoom = (room) => {
+        if (socket) {
+            socket.emit('LEAVE_ROOM', room);
         }
     }
 
@@ -55,7 +69,7 @@ export default function MyProfile() {
             avatar: '',
             online: false,
         },
-        id: '',
+        id: 'room1',
     });
     return (
         <Sheet
@@ -96,6 +110,12 @@ export default function MyProfile() {
                 sender={selectedChat.sender}
                 onSendButtonClick={(message) => {
                     sendMessage(message);
+                }}
+                onJoinClick={() => {
+                    joinRoom(selectedChat.id);
+                }}
+                onLeaveClick={() => {
+                    leaveRoom(selectedChat.id);
                 }}
             />
         </Sheet>

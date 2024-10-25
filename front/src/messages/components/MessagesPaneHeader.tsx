@@ -7,17 +7,20 @@ import Stack from '@mui/joy/Stack';
 import Typography from '@mui/joy/Typography';
 import CircleIcon from '@mui/icons-material/Circle';
 import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
-import PhoneInTalkRoundedIcon from '@mui/icons-material/PhoneInTalkRounded';
+import TimeToLeaveIcon from '@mui/icons-material/TimeToLeave';
+import JoinFullIcon from '@mui/icons-material/JoinFull';
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded';
 import { UserProps } from '../types';
 import { toggleMessagesPane } from '../utils';
 
 type MessagesPaneHeaderProps = {
   sender: UserProps;
+  onJoinClick?: () => void;
+  onLeaveClick?: () => void;
 };
 
 export default function MessagesPaneHeader(props: MessagesPaneHeaderProps) {
-  const { sender } = props;
+  const { sender, onJoinClick, onLeaveClick } = props;
   return (
     <Stack
       direction="row"
@@ -74,21 +77,24 @@ export default function MessagesPaneHeader(props: MessagesPaneHeaderProps) {
       </Stack>
       <Stack spacing={1} direction="row" sx={{ alignItems: 'center' }}>
         <Button
-          startDecorator={<PhoneInTalkRoundedIcon />}
+          startDecorator={<JoinFullIcon />}
           color="neutral"
           variant="outlined"
           size="sm"
           sx={{ display: { xs: 'none', md: 'inline-flex' } }}
+          onClick={onJoinClick}
         >
-          Call
+          Join
         </Button>
         <Button
+          onClick={onLeaveClick}
+          startDecorator={<TimeToLeaveIcon />}
           color="neutral"
           variant="outlined"
           size="sm"
           sx={{ display: { xs: 'none', md: 'inline-flex' } }}
         >
-          View profile
+          Leave
         </Button>
         <IconButton size="sm" variant="plain" color="neutral">
           <MoreVertRoundedIcon />
