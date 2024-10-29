@@ -5,7 +5,9 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import cors from "cors";
 import * as path from "node:path";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -19,7 +21,6 @@ const io = new Server(httpServer, {
   },
 });
 
-const messages = {};
 const generateNickname = () => {
   const adjectives = ["빠른", "느린", "행복한", "슬픈", "용감한"];
   const animals = ["사자", "호랑이", "토끼", "거북이", "독수리"];
@@ -35,37 +36,39 @@ io.on("connection", (socket) => {
   const nickname = generateNickname();
   socket.nickname = nickname;
 
-  socket.on("JOIN_ROOM", (room) => {
+  socket.on("JOIN_ROOM", async (room) => {
     console.log(`${nickname}가 방 ${room}에 입장하였습니다.`);
     socket.join(room);
 
-    // 입장하면 입장 메세지가 먼저 출력되고 나중에 이전 메세지들이 나오는 문제 발견
-    // 메세지들을 시간 순으로 정렬하여 입장 메세지가 나중에 나오게 문제 해결
-    if (messages[room]) {
-      const sortedMessages = messages[room].sort(
-        (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-      );
-      sortedMessages.forEach((msg) => {
-        socket.emit("SEND_MESSAGE", msg);
-      });
-    } else {
-      messages[room] = [];
-    }
+    const previousMessages = await prisma.message.findMany({
+      where: { room },
+      orderBy: { timestamp: "asc" },
+    });
+
+    previousMessages.forEach((msg) => {
+      socket.emit("SEND_MESSAGE", msg);
+    });
 
     const welcomeMessage = {
       id: uniqueId,
-      sender: "bot",
+      sender: "알림 봇",
       content: `새로운 유저 ${nickname} 가 입장했습니다.`,
       timestamp: new Date(),
     };
-    messages[room].push(welcomeMessage);
+
+    await prisma.message.create({
+      data: {
+        room,
+        sender: "알림 봇",
+        content: welcomeMessage.content,
+        timestamp: welcomeMessage.timestamp,
+      },
+    });
+
     io.to(room).emit("SEND_MESSAGE", welcomeMessage);
   });
 
-  // "[object Object]" is not valid JSON 오류 메세지
-  // json.parse()를 사용하여 데이터를 파싱하고 데이터를 문자열로 변환
-  // 오류 해결
-  socket.on("SEND_MESSAGE", (msgData) => {
+  socket.on("SEND_MESSAGE", async (msgData) => {
     let parsedData;
     try {
       parsedData = typeof msgData === "string" ? JSON.parse(msgData) : msgData;
@@ -82,24 +85,38 @@ io.on("connection", (socket) => {
       timestamp: new Date(),
     };
 
-    if (messages[room]) {
-      messages[room].push(newMessage);
-    }
+    await prisma.message.create({
+      data: {
+        room,
+        sender: nickname,
+        content: newMessage.content,
+        timestamp: newMessage.timestamp,
+      },
+    });
 
     io.to(room).emit("SEND_MESSAGE", newMessage);
   });
 
-  socket.on("LEAVE_ROOM", (room) => {
+  socket.on("LEAVE_ROOM", async (room) => {
     console.log(`${nickname}가 방 ${room}을 떠났습니다.`);
 
     const leaveMessage = {
       id: uniqueId,
-      sender: "bot",
+      sender: "알림 봇",
       content: `${nickname} 가 방을 떠났습니다.`,
       timestamp: new Date(),
     };
 
     io.to(room).emit("SEND_MESSAGE", leaveMessage);
+
+    await prisma.message.create({
+      data: {
+        room,
+        sender: "알림 봇",
+        content: leaveMessage.content,
+        timestamp: leaveMessage.timestamp,
+      },
+    });
 
     socket.leave(room);
   });
@@ -109,8 +126,9 @@ io.on("connection", (socket) => {
   });
 });
 
-app.get("/messages", (req, res) => {
-  res.json(messages);
+app.get("/messages", async (req, res) => {
+  const allMessages = await prisma.message.findMany();
+  res.json(allMessages);
 });
 
 app.use(express.static(path.join(__dirname, "public")));
